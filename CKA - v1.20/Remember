@@ -1,0 +1,148 @@
+1. 502 bad gateway가 뜨는경우
+   - Service가 없는 경우
+
+2. container port 에서 expose 하라고 하는 경우 pod에도 port 설정을 해주어야 한다.
+   
+3. pod가 pending 상태에 있는 이유
+   - 스케쥴러가 없는 경우
+     -> nodeName 지정을 통해 수동 할당 가능
+   - 스케쥴링할 노드가 없는경우(자원이 없어서)
+   - 볼륨 지정이 제대로 안되서
+     kubectl exec webapp -- cat /log/app.log
+     Error from server (BadRequest): pod webapp does not have a host assigned
+
+4. ReplicaSet에서 template을 사용할 경우에 rs의 label과 template의 label은 동일해야한다. (deployment도 확인 필요)
+
+5. Pod의 CrashLoopBackOff의 이유
+   - Out of memory (OOMKilled)
+
+6. controlplane node에서 etcd cluster로의 address
+   - --listen-client-urls=https://127.0.0.1:2379,https://10.156.254.3:2379
+
+7. etcd의 server certificate file 위치
+   - --cert-file=/etc/kubernetes/pki/etcd/server.crt
+   etcd의 CA Certificate file 위치
+   - --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt
+
+8. etcd restore의 주의사항
+   - restore 한 후 restore 정보를 etcd 구성 --data-dir= 에 넣어주어야 함
+   - 밑에쪽의 voluems, volumemount의 hostPath도 똑같이 바꿔줘야함
+ETCDCTL_API=3 etcdctl snapshot restore /opt/snapshot-pre-boot.db --data-dir=/var/lib/etcd-from-backup
+
+
+9. kubectl 커맨드가 작동하지 않는 경우에는 kube-apiserver or etcd 가 down 된 경우
+   - docker ps -a 
+   - docker logs를 통해 컨테이너 레벨에서 확인
+
+10. user가 생성한 csr key file을 가지고 CSR object를 만드려면 base64로 인코딩을 해야함
+
+11. CSR의 group을 확인하기 위해서는 csr 을 yaml 형태로 조회해야함
+
+12. Kubeconfig 위치 
+   - /root/.kube
+
+13. RBAC를 사용하고 싶을 때는 kube api server의 config에서(/etc/kubernetes/manifest/apiserver.yaml)  
+    --authorization-mode=RBAC를 해주어야함
+    - 적용되는 순서는 앞에서부터 차례대로 적용됨
+
+14. Role,Rolebinding은 Namespace에 종속됨. 특정 namespace에 대한 권한을 부여하려면 metadata에 namespace 선언 필요
+
+15. RBAC의 적용이 제대로 되었는지 확인하기 위한 명령어
+   - kubectl auth can-i <명령> <target> --as <user name>
+     kubectl auth can-i create deployments --as dev-user
+
+16. RBAC apiGroups를 확인하기 위한 명령어
+   - kubectl api-resources
+
+17. pod의 user를 확인하는 방법
+   - kubectl exec <pod-name> -- whoami
+
+18. definition file에서 정의하는 volumemounts의 name은 colume의 name과 동일하다.
+    컨테이너 내부의 볼륨마운트는 컨테이너 내부에서 해당 볼륨을 Mountpath 경로로 사용하겠다는 것이고,
+    volume의 hostpath는 node에서 볼륨 역할을 하는 경로이다.
+
+19. storage class 를 no-provisioner 로 사용하는 경우는 pv를 사용하는 pod가 생성될때까지 bound를 pending시키기 위함
+
+20. DNS resolution을 확인하기 위해 nslookup을 사용하는 경우 nslookup은 /etc/resolv.conf 파일에 있는 local 값을 참조하지 않고 DNS 서버만 참조한다
+
+21. 클러스터의 network를 조회하는 방법
+   - ip link -> network interface 조회
+   - ip addr -> network interface + ip address까지 조회 (할당되는 범위를 확인할 수 있음)
+   - ifconfig -> 위에 두개꺼 합쳐놓은거(이거를 쓰자)
+   - arp <node> -> 상대 Node의 Mac address를 조회하는 방법 (ssh로 들어가서 ip addr 한 후에 ens 찾는 방법도 있음)
+   - ip route -> route 정보를 확인하는 방법 (default Gateway의 ip address를 조회하는 방법)
+   - netstat -nplt -> program(kubelet ,etcd, kube-proxy,,,) 들의 port를 조회하는 방법
+   - cat /etc/network/interfaces -> 네트워크 인터페이스에 대한 정보 조회
+
+22. 네트워크 플러그인에 대한 정보는 kubelet의 구성정보에 담겨있음 (kubelet.service)
+   - 구성정보에서 cni 바이너리의 폴더를 탐색하면 사용할 수 있는 cni 플러그인들이 있다.
+
+23. 네트워크 플러그인 구성에 대한 정보 확인
+   - ps -aux | grep kubelet
+
+24. 사용중인 CNI에 대한 정보 확인
+   - ls /etc/cni/net.d
+
+25. Pod가 계속 ContainerCreating 상태에 머물러 있을 때
+   - CNI plugin이 없는 경우
+
+26. Pod가 할당되는 ip addr에 대한 정보
+   - kubectl -n kube-system logs weave-net-cnxbt weave
+
+27. Service가 할당되는 ip addr에 대한 정보 (kube-apiserver 에 있음)
+   - cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep cluster-ip-range
+
+28. CoreDNS의 file 위치
+   - cat /etc/coredns/Corefile (Pod 안에서)
+
+29. Ingress는 namespace에 종속된다. 다른 namespace를 사용하고 싶으면 새로 만들어야함
+
+30. ingress controller 배포과정
+   1. namespace 만들기 (선택)
+   2. configmap 만들기
+   3. Serviceaccount 만들기
+   4. Role,Rolebinding 만들어서 SA 인증
+   5. Deployment 만들기(ingress controller)
+   6. Service 만들기 (ingress controller의 svc)
+   7. ingress resource 만들기
+
+31. 트러블슈팅 - 어플리케이션 (users report some issue with accessing the application)
+   - 프론트엔드부터 차근차근 
+   - curl http://web-service-ip:node-port
+   - describe svc, pod 제대로 매칭되었는지
+   - kubectl logs web -f --previous 통해 에러 확인 
+   = svc의 port 지정이 잘못된경우
+   = svc의 selector 지정이 잘못된 경우
+   = deployment, Pod의 env 지정이 잘못된 경우
+
+32. 트러블슈팅 - 컨트롤플레인 (cluster is broken)
+   - kube-apiserver , controller-manager, scheduler, kubelet, kube-proxy의 상태를 확인 ==> service <> status
+   - log 확인, journalctl 
+   - deployment scale 안되는거 --> kubecontroller manager
+   - 컨트롤플레인 컴포넌트는 대부분 manifest 파일 만지작하면 고쳐짐
+
+33. 트러블슈팅 - 워커 노드 (kubelet이 대부분인듯)
+   - describe node 후 condition 확인
+   - 만약 모든 condition이 unknown인 경우에는 워커노드가 loss됬을 수 있음
+   - kubelet의 로그 조회!!, kubelet certificate 조회
+   = 단순 kubelet 중단 ==> ssh 후 service kubelet start
+   = kubelet은 고치고 나면 항상 재시작 해주자!
+
+34. 트러블슈팅 - 네트워크 (아예 앱 창이 안뜸)
+   - kubelet의 네트워크 플러그인 설정이 제대로 되었는지 
+   - CoreDNS에 문제 생겼을때 ==> service account, cluster role, clusterrolebinding, deployment, configmap, service 다 가능함
+     1. 만약 Pending -> 일단 network plugin이 설치되어있는지 확인
+     2. CrashLoopback or Error -> 답없는듯
+     3. 만약 CoreDNS가 제대로 동작중인데 뭔가 문제있는듯 -> kube-dns endpoint 확인 (kubectl -n kube-system get ep kube-dns)
+                                                          selector 확인
+     4. daemonset 경로에 문제 있을땐 configmap 세팅을 따라서
+
+35. pod의 상태가 Init:error 일 경우 -> Init container 수정 
+
+36. application, svc와 관련된 issue fix 후에는 test pod를 만들어서 nslookup을 통해서 확인할 수 있다.
+
+37. kubeconfig의 위치
+   - /root/.kube
+1
+38. deployment replica 에 대한 이슈
+   - kube-system의 component 이슈
