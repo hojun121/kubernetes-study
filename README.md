@@ -1,7 +1,7 @@
 #CKA_cert
 ==========
 
-<img src = https://github.com/hojun121/CKA_cert/blob/main/k8s%20cert.png>
+<img src = https://github.com/hojun121/CKA_cert/blob/main/CKACert.png>
 
 ## Core Concepts
   - 클러스터 구조
