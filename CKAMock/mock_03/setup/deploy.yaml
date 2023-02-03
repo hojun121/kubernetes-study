@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: alpha-mysql
+  name: alpha-mysql
+  namespace: practice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alpha-mysql
+  template:
+    metadata:
+      labels:
+        app: alpha-mysql
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "1"
+        image: mysql:5.6
+        imagePullPolicy: Always
+        name: mysql
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mysql-data
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-alpha-pvc
