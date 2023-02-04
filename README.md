@@ -33,18 +33,7 @@
   - 클러스터 유지/관리
   - OS 업그레이드
   - 백업 및 저장 방법론
-
-## Security
-  - 인증/권한
-  - k8s 보안
-  - 네트워크 정책
-  - 클러스터 구성 요소의 TLS 인증서
-
-## Core Concepts
-  - 클러스터 구조
-  - API 기본 요소
-  - 서비스/네트워크 기본 요소
-
+  
 ## Scheduling
   - 라벨 & 셀렉터(Labels & Selectors)
   - 자원 한계(Resource Limits)
